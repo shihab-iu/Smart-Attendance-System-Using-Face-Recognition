@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student List</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 40px auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .back {
+            display: inline-block;
+
+            text-decoration: none;
+
+            background: #333;
+            color: white;
+
+            padding: 10px 18px;
+
+            border-radius: 6px;
+
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+
+            background: white;
+
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+
+            padding: 14px;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .edit {
+            display: inline-block;
+
+            background: #ffc107;
+            color: black;
+
+            padding: 7px 12px;
+
+            border-radius: 5px;
+
+            text-decoration: none;
+        }
+
+        .delete {
+            background: #dc3545;
+            color: white;
+
+            border: none;
+
+            padding: 7px 12px;
+
+            border-radius: 5px;
+
+            cursor: pointer;
+        }
+
+        .empty {
+            background: white;
+
+            padding: 30px;
+
+            text-align: center;
+
+            border-radius: 10px;
+
+            color: #777;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <a href="/" class="back">
+        ← Back to Dashboard
+    </a>
+
+
+    <h1>
+        Registered Students
+    </h1>
+
+
+    {% if students %}
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Name
+                </th>
+
+                <th>
+                    Roll
+                </th>
+
+                <th>
+                    Department
+                </th>
+
+                <th>
+                    Face Status
+                </th>
+
+                <th>
+                    Actions
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+
+        {% for student in students %}
+
+
+        <tr>
+
+            <td>
+                {{ student.name }}
+            </td>
+
+            <td>
+                {{ student.roll }}
+            </td>
+
+            <td>
+                {{ student.department }}
+            </td>
+
+            <td>
+                Registered ✅
+            </td>
+
+            <td>
+
+                <a
+                    href="/edit_student/{{ student.roll }}"
+                    class="edit"
+                >
+                    Edit
+                </a>
+
+
+                <button
+                    class="delete"
+                    onclick="deleteStudent('{{ student.roll }}')"
+                >
+                    Delete
+                </button>
+
+            </td>
+
+        </tr>
+
+
+        {% endfor %}
+
+
+        </tbody>
+
+    </table>
+
+
+    {% else %}
+
+
+    <div class="empty">
+
+        No registered students found.
+
+    </div>
+
+
+    {% endif %}
+
+
+</div>
+
+
+<script>
+
+function deleteStudent(roll) {
+
+    const confirmDelete =
+        confirm(
+            "Are you sure you want to delete student " +
+            roll +
+            "?"
+        );
+
+    if (!confirmDelete) {
+        return;
+    }
+
+
+    fetch(
+        "/delete_student/" + roll,
+        {
+            method: "POST"
+        }
+    )
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        alert(data.message);
+
+        if (data.success) {
+
+            location.reload();
+
+        }
+
+    })
+
+    .catch(error => {
+
+        alert(
+            "Error deleting student."
+        );
+
+        console.error(error);
+
+    });
+
+}
+
+</script>
+
+
+</body>
+
+</html>

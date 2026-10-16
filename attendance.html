@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Take Attendance</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .camera-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        video {
+            width: 100%;
+            max-width: 500px;
+            max-height: 380px;
+            border-radius: 10px;
+            background: black;
+            object-fit: cover;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        button {
+            padding: 12px 22px;
+            margin: 15px 5px 5px;
+
+            border: none;
+            border-radius: 6px;
+
+            color: white;
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        #startButton {
+            background: #007bff;
+        }
+
+        #stopButton {
+            background: #dc3545;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+
+            border-radius: 8px;
+
+            background: #f1f1f1;
+
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .back {
+            display: inline-block;
+
+            margin-bottom: 20px;
+
+            padding: 10px 18px;
+
+            background: #333;
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 6px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+    <a href="/" class="back">
+        ← Back to Dashboard
+    </a>
+
+
+    <h1>
+        Face Recognition Attendance
+    </h1>
+
+
+    <div class="camera-box">
+
+        <video id="video" autoplay playsinline></video>
+
+        <canvas id="canvas"></canvas>
+
+
+        <br>
+
+
+        <button id="startButton" onclick="startCamera()">
+            Start Camera
+        </button>
+
+
+        <button id="stopButton" onclick="stopCamera()">
+            Stop Camera
+        </button>
+
+
+        <div id="status">
+            Camera is not started.
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let video = document.getElementById("video");
+
+let canvas = document.getElementById("canvas");
+
+let statusText = document.getElementById("status");
+
+let stream = null;
+
+let recognitionInterval = null;
+
+let recognitionRunning = false;
+
+
+// -----------------------------------
+// Start Camera
+// -----------------------------------
+
+async function startCamera() {
+
+    try {
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
+
+        video.srcObject = stream;
+
+        statusText.innerText =
+            "Camera started. Look at the camera.";
+
+        recognitionRunning = true;
+
+        startRecognition();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        statusText.innerText =
+            "Could not access camera.";
+
+    }
+
+}
+
+
+// -----------------------------------
+// Stop Camera
+// -----------------------------------
+
+function stopCamera() {
+
+    recognitionRunning = false;
+
+
+    if (recognitionInterval) {
+
+        clearInterval(recognitionInterval);
+
+        recognitionInterval = null;
+
+    }
+
+
+    if (stream) {
+
+        stream.getTracks().forEach(
+            track => track.stop()
+        );
+
+        stream = null;
+
+    }
+
+
+    video.srcObject = null;
+
+
+    statusText.innerText =
+        "Camera stopped.";
+
+}
+
+
+// -----------------------------------
+// Start Recognition
+// -----------------------------------
+
+function startRecognition() {
+
+    if (recognitionInterval) {
+
+        clearInterval(recognitionInterval);
+
+    }
+
+
+    recognitionInterval = setInterval(
+        recognizeFace,
+        3000
+    );
+
+}
+
+
+// -----------------------------------
+// Recognize Face
+// -----------------------------------
+
+async function recognizeFace() {
+
+    if (!recognitionRunning) {
+        return;
+    }
+
+
+    if (!stream) {
+        return;
+    }
+
+
+    canvas.width = video.videoWidth;
+
+    canvas.height = video.videoHeight;
+
+
+    let context = canvas.getContext("2d");
+
+
+    context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    let imageData =
+        canvas.toDataURL("image/jpeg");
+
+
+    try {
+
+        let response = await fetch(
+            "/recognize_face",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    image: imageData
+                })
+            }
+        );
+
+
+        let result =
+            await response.json();
+
+
+        statusText.innerText =
+            result.message;
+
+
+        // -----------------------------------
+        // SUCCESSFUL RECOGNITION
+        // -----------------------------------
+
+        if (result.success) {
+
+            recognitionRunning = false;
+
+
+            if (recognitionInterval) {
+
+                clearInterval(
+                    recognitionInterval
+                );
+
+                recognitionInterval = null;
+
+            }
+
+
+            statusText.innerText =
+                "✅ " + result.message +
+                "\n\nAttendance completed successfully!";
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        statusText.innerText =
+            "Recognition error.";
+
+    }
+
+}
+
+</script>
+
+
+</body>
+
+</html>
+```
